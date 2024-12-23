@@ -27,9 +27,8 @@ void delay_ms(uint32_t delay) {
 }
 
 void delay_us(uint32_t delay) {
-    for (uint32_t i = 0; i < delay; i++)
+    for (uint32_t i = 0; i < delay/2; i++)
     {
         _delay_us(1);
-    }
-    
+    }  
 }
