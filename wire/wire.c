@@ -24,6 +24,9 @@ int wire_init(uint32_t scl_freq, bool enPullups) {
     // Calculate TWI interface speed
     int TWBR_value = (F_CPU - scl_freq * 16UL) / (2 * scl_freq * 1);
     TWBR = TWBR_value;
+    // TWBR = 0x48;
+    TWSR = 0;
+    TWCR = (1<<TWINT) | (1<<TWEN);
 
     if (enPullups) {
         PORTC |= (1 << 4);
@@ -44,29 +47,29 @@ static int send_start(void) {
     // Wait for start condition to occur and check correct
     while (!(TWCR & (1 << TWINT)));
 
-    // if (((TWSR & 0xF8)!= START_SENT) && ((TWSR & 0xF8)!= STARTR_SENT)) {
-    //     return 1;
-    // }
+    if (((TWSR & 0xF8)!= START_SENT) && ((TWSR & 0xF8)!= STARTR_SENT)) {
+        return 1;
+    }
     return 0;
 }
 
-static int send_restart(void) {
-    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWSTO) | (1 << TWEN);
+// static int send_restart(void) {
+//     TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWSTO) | (1 << TWEN);
     
-    while (!(TWCR & (1 << TWINT)));
+//     while (!(TWCR & (1 << TWINT)));
 
-}
+// }
 
 static int send_address(uint8_t addr, bool read) {
     TWDR = addr << 1 | read;
     TWCR = (1 << TWINT) | (1 << TWEN);
 
     // Wait for data to send and check acknowledge
-    // while (!(TWCR & (1 << TWINT)));
+    while (!(TWCR & (1 << TWINT)));
 
-    // if ((TWSR & 0xF8) != ADDRESS_ACK) {
-    //     return 2;
-    // }
+    if ((TWSR & 0xF8) != ADDRESS_ACK) {
+        return 2;
+    }
 
     return 0;
 }
@@ -76,7 +79,7 @@ static int send_byte(uint8_t data) {
     TWCR = (1 << TWINT) | (1 << TWEN);
 
     // Wait for data to send and check acknowledge
-    // while (!(TWCR & (1 << TWINT)));
+    while (!(TWCR & (1 << TWINT)));
 
     if ((TWSR & 0xF8) != DATA_ACK) {
         return 2;
@@ -85,12 +88,27 @@ static int send_byte(uint8_t data) {
     return 0;
 }
 
-static int read_byte(uint8_t *data) {
+static int read_byte_ack(uint8_t *data) {
     uint64_t x = 0;
-    TWCR = (1 << TWINT) | (1 << TWEA);
-    while (!(TWCR & (1 << TWINT)) && x < 1000) {
+    TWCR = (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
+
+    while (!(TWCR & (1 << TWINT))) {
         x++;
-        asm ("");
+        asm ("nop");
+    }
+
+    *data = TWDR;
+
+    return 0;
+}
+
+static int read_byte_nack(uint8_t *data) {
+    uint64_t x = 0;
+    TWCR = (1 << TWINT) | (1 << TWEN);
+
+    while (!(TWCR & (1 << TWINT))) {
+        x++;
+        asm ("nop");
     }
 
     *data = TWDR;
@@ -99,7 +117,7 @@ static int read_byte(uint8_t *data) {
 }
 
 static int send_stop(void) {
-    TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+    TWCR = (1<<TWINT)|(1<<TWSTO)|(1<<TWEN);
 
     return 0;
 }
@@ -108,16 +126,18 @@ int wire_write(uint8_t addr, uint8_t data) {
     int result = 0;
     // Enable two wire interface clear interrupt 
     // and send a start condition
+    
     result = send_start();
     if (result != 0) {
         return result;
     }
+
     // // load the address with a write cmd and trigger a send
     result = send_address(addr, false);
     if (result != 0) {
         return result;
     }
-
+    
     // Load and send data
     result = send_byte(data);
     if (result != 0) {
@@ -177,11 +197,14 @@ int wire_read_reg(uint8_t addr, uint8_t reg, uint8_t buf[], uint8_t len) {
     result = send_address(addr, true);
 
     
-    for (size_t i = 0; i < len; i++)
+    for (size_t i = 0; i < len-1; i++)
     {
-        result = read_byte(&buf[i]);
+        result = read_byte_ack(&buf[i]);
         if (result != 0) return result;
     }
+
+    result = read_byte_nack(&buf[len-1]);
+    if (result != 0) return result;
 
     result = send_stop();
     if (result != 0) return result;
@@ -196,14 +219,18 @@ int wire_read(uint8_t addr, uint8_t buf[], uint8_t len) {
     if (result != 0) return result;
 
     // load the address with a write cmd and trigger a send
-    result = send_address(addr, false);
+    result = send_address(addr, true);
     if (result != 0) return result;
 
-    for (size_t i = 0; i < len; i++)
+    for (size_t i = 0; i < len-1; i++)
     {
-        result = read_byte(&buf[i]);
+        result = read_byte_ack(&buf[i]);
         if (result != 0) return result;
     }
+
+    result = read_byte_nack(&buf[len-1]);
+    if (result != 0) return result;
+
 
     result = send_stop();
     if (result != 0) return result;
