@@ -20,10 +20,18 @@
 #define ADDRESS_ACK 0x18
 #define DATA_ACK 0x28
 
-int wire_init(uint32_t scl_freq) {
+int wire_init(uint32_t scl_freq, bool enPullups) {
     // Calculate TWI interface speed
     int TWBR_value = (F_CPU - scl_freq * 16UL) / (2 * scl_freq * 1);
     TWBR = TWBR_value;
+
+    if (enPullups) {
+        PORTC |= (1 << 4);
+        PORTC |= (1 << 5);
+    } else {
+        PORTC &= ~(1 << 4);
+        PORTC &= ~(1 << 5);
+    }
 
     return 0;
 }
@@ -54,7 +62,7 @@ static int send_address(uint8_t addr, bool read) {
     TWCR = (1 << TWINT) | (1 << TWEN);
 
     // Wait for data to send and check acknowledge
-    while (!(TWCR & (1 << TWINT)));
+    // while (!(TWCR & (1 << TWINT)));
 
     // if ((TWSR & 0xF8) != ADDRESS_ACK) {
     //     return 2;
@@ -68,11 +76,11 @@ static int send_byte(uint8_t data) {
     TWCR = (1 << TWINT) | (1 << TWEN);
 
     // Wait for data to send and check acknowledge
-    while (!(TWCR & (1 << TWINT)));
+    // while (!(TWCR & (1 << TWINT)));
 
-    // if ((TWSR & 0xF8) != DATA_ACK) {
-    //     return 2;
-    // }
+    if ((TWSR & 0xF8) != DATA_ACK) {
+        return 2;
+    }
 
     return 0;
 }
@@ -104,7 +112,7 @@ int wire_write(uint8_t addr, uint8_t data) {
     if (result != 0) {
         return result;
     }
-    // load the address with a write cmd and trigger a send
+    // // load the address with a write cmd and trigger a send
     result = send_address(addr, false);
     if (result != 0) {
         return result;
@@ -116,7 +124,7 @@ int wire_write(uint8_t addr, uint8_t data) {
         return result;
     }
 
-    // Send stop
+    // // Send stop
     result = send_stop();
     if (result != 0) {
         return result;
@@ -179,6 +187,26 @@ int wire_read_reg(uint8_t addr, uint8_t reg, uint8_t buf[], uint8_t len) {
     if (result != 0) return result;
 
     return 0;
-    
+}
 
+int wire_read(uint8_t addr, uint8_t buf[], uint8_t len) {
+    int result = 0;
+
+    result = send_start();
+    if (result != 0) return result;
+
+    // load the address with a write cmd and trigger a send
+    result = send_address(addr, false);
+    if (result != 0) return result;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        result = read_byte(&buf[i]);
+        if (result != 0) return result;
+    }
+
+    result = send_stop();
+    if (result != 0) return result;
+
+    return 0;
 }
