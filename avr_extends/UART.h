@@ -59,6 +59,12 @@ void UART_puthex8(uint8_t val);
  */
 unsigned char UART_getc(void);
 
+/** 
+ * @brief Check if data is avaliable to be read
+ * 
+ * @return true if data is waiting
+ */
+bool UART_data_available(void);
 
 /** 
  * @brief Get a whole line from the uart buffer 

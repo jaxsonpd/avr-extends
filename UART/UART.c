@@ -121,6 +121,10 @@ unsigned char UART_getc(void) {
     return UDR0;
 }
 
+bool UART_data_available(void) {
+    return (UCSR0A & (1 << RXC0));
+}
+
 
 uint16_t UART_get_line(char* p_buffer, uint16_t bufferLength) {
     uint16_t bufIdx = 0;
