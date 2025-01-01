@@ -16,10 +16,11 @@
 /** 
  * @brief Initialise the wire driver
  * @param scl_freq the frequency for the serial clock
+ * @param enPullups enable the 5V pullups on the serial interface
  * 
  * @return 0 on success
  */
-int wire_init(uint32_t scl_freq);
+int wire_init(uint32_t scl_freq, bool enPullups);
 
 /** 
  * @brief Send a write message with data to the slave
@@ -29,6 +30,17 @@ int wire_init(uint32_t scl_freq);
  * @return 0 if successful, 1 if internal error, 2 if no ack
  */
 int wire_write(uint8_t addr, uint8_t data);
+
+/** 
+ * @brief Read a number of words from the slave
+ * @param addr the address to read (7-bit)
+ * @param buf the buffer to read into 
+ * @param len the number of words to read
+ * 
+ * @return 0 if successful
+ */
+int wire_read(uint8_t addr, uint8_t buf[], uint8_t len);
+
 
 /** 
  * @brief Write to a register with a data value
