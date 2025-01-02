@@ -11,6 +11,8 @@
 #ifndef UART_H
 #define UART_H
 
+#include <stdbool.h>
+
 /** 
  * @brief Initalise the UART interface to the give baud rate
  * 
