@@ -70,7 +70,7 @@ bool GPIO_toggle_output(uint16_t pin);
  *
  * @return the state of the pin
  */
-bool GPIO_getState(uint16_t pin);
+bool GPIO_get_state(uint16_t pin);
 
 
 #endif // GPIO_H

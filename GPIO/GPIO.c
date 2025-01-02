@@ -21,10 +21,10 @@ void GPIO_pin_init(pin_t pin, pinType_t type) {
         *DDR_pin |= (1 << PINNUM(pin));
     } else if (type == INPUT_PULLUP) {
         *DDR_pin &= ~(1 << PINNUM(pin));
-        *(uint8_t*)PINBANK(pin) &= (1 << PINNUM(pin)); // set pullup
+        *(uint8_t*)PINBANK(pin) |= (1 << PINNUM(pin)); // set pullup
     } else if (type == INPUT_NO_PULLUP) {
         *DDR_pin &= ~(1 << PINNUM(pin));
-        *(uint8_t*)PINBANK(pin) &= ~(1 << PINNUM(pin)); // set pullup
+        *(uint8_t*)PINBANK(pin) &= ~(1 << PINNUM(pin)); // don't set pullup
     }
 }
 
@@ -44,6 +44,6 @@ bool GPIO_toggle_output(pin_t pin) {
     return *(uint8_t*)(PINBANK(pin) - 2); // PINx regs is 2 addresses lower
 }
 
-bool GPIO_getState(pin_t pin) {
-    return *(uint8_t*)(PINBANK(pin) - 2); // PINx regs is 2 addresses lower
+bool GPIO_get_state(pin_t pin) {
+    return *(uint8_t*)(PINBANK(pin) - 2) & (1 << PINNUM(pin)); // PINx regs is 2 addresses lower
 }
