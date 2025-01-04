@@ -4,7 +4,7 @@
  * @date 2025-01-05
  * @brief Allows checking of the up time of the processor
  * 
- * @note uses TIMER1B
+ * @note uses TIMER2
  */
 
 
@@ -18,7 +18,7 @@
 ISR(TIMER1_COMPA_vect);
 
 /** 
- * @brief Initialise the uptime module setting up the required timer 1B
+ * @brief Initialise the uptime module setting up the required timer 2
  * 
  */
 void uptime_init(void);

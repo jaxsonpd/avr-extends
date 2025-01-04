@@ -19,18 +19,33 @@
 
 volatile uint64_t timerCount = 0; // The uptime count
 
-ISR(TIMER1_COMPA_vect) {
+// ISR(TIMER1_COMPA_vect) {
+//     timerCount++;
+// }
+
+// void uptime_init(void) {
+//     uint16_t msCount = ((F_CPU / 1000) / 8); // When count is this 1ms passed
+
+//     TCCR1B |= (1 << WGM12) | (1 << CS11); // Count Up, clk/8 prescaler 
+
+//     OCR1A = msCount;
+    
+//     TIMSK1 |= (1 << OCIE1A);
+// }
+
+ISR(TIMER2_COMPA_vect) {
     timerCount++;
 }
 
 void uptime_init(void) {
-    uint16_t msCount = ((F_CPU / 1000) / 8); // When count is this 1ms passed
+    uint8_t msCount = ((F_CPU / 1000) / 64); // When count is this 1ms passed
 
-    TCCR1B |= (1 << WGM12) | (1 << CS11); // Count Up, clk/8 prescaler 
+    TCCR2A |= (1 << WGM21);
+    TCCR2B |= (1 << CS22); // Count Up, clk/8 prescaler 
 
-    OCR1A = msCount;
+    OCR2A = msCount;
     
-    TIMSK1 |= (1 << OCIE1A);
+    TIMSK2 |= (1 << OCIE2A);
 }
 
  uint64_t uptime_ms(void) {
